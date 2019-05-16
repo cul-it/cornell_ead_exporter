@@ -6,6 +6,33 @@ class EADSerializer < ASpaceExport::Serializer
 serializer_for :ead
 
 
+def sanitize_mixed_content(content, context, fragments, allow_p = false  )
+	#    return "" if content.nil?
+	
+		# remove smart quotes from text
+		content = remove_smart_quotes(content)
+	
+		# br's should be self closing
+		content = content.gsub("<br>", "<br/>").gsub("</br>", '')
+		# lets break the text, if it has linebreaks but no p tags.
+	
+		if allow_p
+		  content = handle_linebreaks(content)
+		else
+		  escape_content(content)
+		end
+	
+		begin
+		  if ASpaceExport::Utils.has_html?(content)
+			context.text (fragments << content )
+		  else
+			context.text content.gsub("&amp;", "&") #thanks, Nokogiri
+		  end
+		rescue
+		  context.cdata content
+		end
+	end
+	
 	def serialize_origination(data,xml,fragments)
 		unless data.creators_and_sources.nil?
 			data.creators_and_sources.each do |link|
